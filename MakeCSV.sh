@@ -35,13 +35,20 @@ echo -e "\n"
 	read _Yn
 	case $_Yn in
 		[Yy]* )
-			cp CSVTemplate $_NewFile.csv
-			for (( i=$_StartNum; i<=$_EndNum; i++))
-				do
-					echo $_Year$_SemCode$i$_UnitType,,, >> $_NewFile.csv
-			done
-			cat $_NewFile.csv
-			wc -l $_NewFile.csv
+			_RepeatCheck=$(cat *.csv | grep "$_StartNum")
+			if [ "" == "$_RepeatCheck" ];
+			then
+				cp CSVTemplate $_NewFile.csv
+				for (( i=$_StartNum; i<=$_EndNum; i++))
+					do
+						echo $_Year$_SemCode$i$_UnitType,,, >> $_NewFile.csv
+				done
+				cat $_NewFile.csv
+				wc -l $_NewFile.csv
+			else
+			echo "Error, you have entered a duplicate Unit Number"
+			exit
+			fi
 			;;
 		[Nn]* ) echo "Going to cancel creation of CSV file, please rerun the script once you are returned to your terminal."
 			sleep 4
