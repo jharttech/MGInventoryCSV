@@ -1,83 +1,87 @@
-#!/usr/bin/env python3
-from sys import argv, exit
+import sys
 import csv
-import os
-import subprocess
-import time
+import re
 
-check = ['y','n']
-divider = "######################################################################################"
-template = 'CSVTemplate'
+
+class Setup:
+    def __init__(self, cart, po, unit_count, year, sem_code, unit_type, start_num, end_num):
+        self.info = (cart, po, unit_count, year, sem_code, unit_type, start_num, end_num)
+        return self.info
+
+
+    @classmethod
+    def get(cls):
+        cart = input("Please enter the cart name: ")
+        po = input("Please enter the PO Number for the order: ")
+        while True:
+            unit_count = input("Please enter the number of units for the order: ")
+            if not re.search(r"^[0-9]+$", unit_count):
+                print(f"Invalid Unit count")
+            else:
+                unit_count = int(unit_count)
+                break
+        while True:
+            year = input("Please enter the inventory year (ex. 22): ")
+            if not re.search(r"^(?:2[2-9])$", year):
+                print(f"Invalid year")
+            else:
+                break
+        while True:
+            sem_code = input("Please enter the semester code (FA, SP, SU): ")
+            if not re.search(r"^(FA|SP|SU)$", sem_code):
+                print(f"Invalid Semester Code")
+            else:
+                break
+        while True:
+            unit_type = input("Please enter the type of units (CB, P, PJ, HF): ")
+            if not re.search(r"^(CB|PJ|P|HF)$", unit_type):
+                print("Invalid Unit Type")
+            else:
+                break
+        while True:
+            start_num = input("Please enter the starting serial number: ")
+            if not re.search(r"^[0-9]{4}$", start_num):
+                print("Invalid start number, ex. 2234")
+            else:
+                validate = input(f"You have entered {start_num} as starting serial number, is that correct? y/n ")
+                if re.search(r"^(y|n)$", validate, flags=re.IGNORECASE):
+                    start_num = int(start_num)
+                    break
+        end_num = ((unit_count - 1) + start_num)
+
+        return cart,po,unit_count,year,sem_code,unit_type,start_num,end_num
+
+
+
+class Compose():
+    def __init__(self, info):
+        self.new_file(info)
+        self.write_file(info)
+
+    def __str__(self):
+        return f"New file {self.filename} has been composed."
+
+    def new_file(self, info):
+        self.filename = f"{info[0]}-PO{info[1]}-Units{info[2]}-{info[6]}-{info[7]}.csv"
+        return self.filename
+
+    def write_file(self, info):
+        for i in range(0, int(info[2])):
+            self.current_num = (int(info[6]) + i)
+            self.asset_tag = (info[3]+info[4]+str(self.current_num)+info[5],"","","")
+            with open(self.filename, mode='a') as csv_file:
+                unit_file = csv.writer(csv_file, delimiter=',')
+                unit_file.writerow(self.asset_tag)
+
+
+
 
 def main():
-    confirm = None
-    os.system('cat jhart_shell_logo.txt')
-    print((divider + '\n')*2)
-    while confirm != 'y':
-        info = setup()
-        newFile = str(info.get('cart', "Error getting Cart name!!") + "-PO" + info.get('po', "Error getting PO Number")
-                    + "-Units" + str(info.get('unitCount', 'Error getting Unit count!!')) + "-" +
-                    str(info.get('startNum', 'Error getting Start number!!')) + "-" + str(info.get('endNum', 'Error getting Ending Number!!'))+".csv")
-        while confirm not in check:
-            confirm = input("Your new file will be named: " + newFile + " Is this correct? (y/n) ").lower()
-            dupCheck = duplicateCheck(str(info.get('startNum')),template,newFile)
-        if confirm == 'y' and dupCheck:
-            print("You have entered duplicate inventory numbers, check your info and try again!!!")
-            confirm = None
-    composeFile(newFile,str(info.get('startNum')),info.get('unitCount'),info.get('year'),info.get('semCode'),info.get('unitType'))
-    print("You new file " + newFile + " has been created.  Thank you and have a great day! -JHart")
+    setup = Setup.get()
+    compose = Compose(setup)
+    print(compose)
 
 
 
-def setup():
-    valid = False
-    infoDict = {
-    'cart': None,
-    'po' : None,
-    'unitCount' : None,
-    'year' : None,
-    'semCode' : None,
-    'unitType' : None,
-    'startNum' : None,
-    'endNum' : None
-    }
-    while not valid:
-        correct = None
-        infoDict.update({'cart' : input("Please enter the cart name: ")})
-        infoDict.update({'po' : input("Please enter the PO Number for this order: ")})
-        infoDict.update({'unitCount' : int(input("Please enter how many units will be in this cart: "))})
-        infoDict.update({'year' : input("Please enter the Inventory Year (YY): ")})
-        infoDict.update({'semCode' : input("Please enter the semester code: ").upper()})
-        infoDict.update({'unitType' : input("Please enter the unit type (ex: 'P' is printer, 'CB' is chromebook): ").upper()})
-        infoDict.update({'startNum' : int(input("Please enter the starting unit inventory number: "))})
-        infoDict.update({'endNum' : ((infoDict.get('unitCount', 'Error getting unit count!!') - 1) + infoDict.get('startNum', 'Error getting start number!!'))})
-        while correct not in check:
-            print(infoDict)
-            correct = input("Does the above information look correct? (y/n) ").lower()
-            if correct != 'y' and correct in check:
-                continue
-            elif correct in check:
-                return(infoDict)
-
-def duplicateCheck(startingNum,csvTemplate,newFile):
-    repeatCheck = None
-    COMMAND = ('grep ' + startingNum + ' *.csv')
-    repeatCheck = subprocess.call(COMMAND, stdout=open(os.devnull, 'w'), stderr=open(os.devnull), shell=True)
-    if repeatCheck == 1 or repeatCheck == 2:
-        subprocess.call(['cp',csvTemplate,newFile])
-        return False
-    elif repeatCheck == 0:
-        return True
-    else:
-        print("Unknown error, turning off the lights now!!")
-        exit(1)
-
-def composeFile(newFile,startNum,unitCount,year,semCode,unitType):
-    for i in range(0,unitCount):
-        currentNum = (int(startNum) + i)
-        assetTag = (year + semCode + str(currentNum) + unitType,"","","")
-        with open(newFile, mode='a') as csvFile:
-            unitFile = csv.writer(csvFile, delimiter=',')
-            unitFile.writerow(assetTag)
-
-main()
+if __name__ == "__main__":
+    main()
