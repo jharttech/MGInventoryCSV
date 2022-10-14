@@ -114,6 +114,7 @@ class Duplicate:
 
         return False
 
+
 def main():
     setup = Setup.get()
     Duplicate(setup)
