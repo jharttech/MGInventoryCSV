@@ -114,11 +114,6 @@ class Duplicate:
 
         return False
 
-<<<<<<< HEAD
-divider = "######################################################################################"
-=======
->>>>>>> next
-
 def main():
     setup = Setup.get()
     Duplicate(setup)
