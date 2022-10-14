@@ -5,9 +5,7 @@ import os
 import subprocess
 import time
 
-check = ['y','n']
 divider = "######################################################################################"
-template = 'CSVTemplate'
 
 def main():
     confirm = None
